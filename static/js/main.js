@@ -1,0 +1,1 @@
+// Placeholder JS - Ready for dynamic chart and claim features
