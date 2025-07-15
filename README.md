@@ -1,4 +1,3 @@
 # MOVC Dashboard
 
-This repository is for the Move Coin (MOVC) simulation and dashboard.
-Deployed via Vercel.
+Simulation dashboard for MOVC project, built with React and Recharts.
