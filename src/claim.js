@@ -9,14 +9,17 @@ export default function Dashboard() {
   const generateSimulationData = () => {
     const days = 365;
     let data = [];
+    let reserve = 0, distributed = 0;
     for (let day = 0; day <= days; day++) {
+      reserve += population * txFeeRate;
+      distributed += dailyDistribution;
       data.push({
         day,
-        distributed: dailyDistribution * day,
-        reserve: population * txFeeRate * day,
-        minted: Math.max(0, (dailyDistribution - population * txFeeRate) * day),
+        distributed,
+        reserve,
+        minted: Math.max(0, dailyDistribution - population * txFeeRate),
         burned: Math.random() * 10,
-        total: dailyDistribution * day
+        total: distributed + reserve
       });
     }
     return data;
@@ -27,6 +30,20 @@ export default function Dashboard() {
   return (
     <div style={{ padding: 20 }}>
       <h2>MOVC Dashboard Simulation</h2>
+      <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+        <div>
+          <label>Population: </label>
+          <input type="number" value={population} onChange={e => setPopulation(Number(e.target.value))} />
+        </div>
+        <div>
+          <label>Fee Rate: </label>
+          <input type="number" step="0.0001" value={txFeeRate} onChange={e => setTxFeeRate(Number(e.target.value))} />
+        </div>
+        <div>
+          <label>Daily Distribution: </label>
+          <input type="number" value={dailyDistribution} onChange={e => setDailyDistribution(Number(e.target.value))} />
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
