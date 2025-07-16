@@ -6,10 +6,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Move Coin (MOVC)
 /// @notice A decentralized, fixed-supply, fee-on-transfer ERC-20 token with dynamic inactivity-based fees.
+interface IClaimVerifier {
+    function verifyClaim(address user, uint256 distance, uint256 timestamp, bytes calldata proof) external view returns (bool);
+}
+
 contract MOVC is ERC20 {
     uint256 public constant MAX_SUPPLY = 21_000_000 * 1e18;
     uint256 public constant BASE_FEE = 1; // 0.01% in basis points (1/10000)
     address public immutable reservePool;
+    IClaimVerifier public claimVerifier;
 
     mapping(address => uint256) public lastActivity;
 
@@ -23,8 +28,9 @@ contract MOVC is ERC20 {
         _;
     }
 
-    constructor(address _reservePool) ERC20("Move Coin", "MOVC") {
+    constructor(address _verifier, address _reservePool) ERC20("Move Coin", "MOVC") {
         require(_reservePool != address(0), "Invalid reserve pool");
+        claimVerifier = IClaimVerifier(_verifier);
         reservePool = _reservePool;
     }
 
@@ -53,6 +59,13 @@ contract MOVC is ERC20 {
 
         uint256 inactiveYears = (block.timestamp - last) / 365 days;
         return BASE_FEE + inactiveYears * 100; // +1% per year of inactivity
+    }
+
+    /// @notice Utility: check if address inactive by threshold
+    function isInactive(address user, uint256 minInactiveYears) external view returns (bool) {
+        uint256 last = lastActivity[user];
+        if (last == 0) return false;
+        return (block.timestamp - last) >= (minInactiveYears * 365 days);
     }
 
     /// @notice Minting logic based on detected total inactivity
