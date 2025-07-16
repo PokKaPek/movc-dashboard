@@ -1,73 +1,70 @@
-
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
-contract MoveCoin {
-    string public name = "Move Coin";
-    string public symbol = "MOVC";
-    uint8 public decimals = 18;
-    uint256 public totalSupply = 21000000 * 10**uint256(decimals);
-    uint256 public distributedSupply = 0;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    mapping(address => uint256) public balanceOf;
-    mapping(address => uint256) public lastActive;
-    mapping(address => mapping(address => uint256)) public allowance;
+/// @title Move Coin (MOVC)
+/// @notice A decentralized, fixed-supply, fee-on-transfer ERC-20 token with dynamic inactivity-based fees.
+contract MOVC is ERC20 {
+    uint256 public constant MAX_SUPPLY = 21_000_000 * 1e18;
+    uint256 public constant BASE_FEE = 1; // 0.01% in basis points (1/10000)
+    address public immutable reservePool;
 
-    address public immutable owner;
-    uint256 public feeBase = 1; // 0.01% default
-    uint256 public constant FEE_DIVISOR = 10000; // 0.01% = 1/10000
-    address public reservePool;
+    mapping(address => uint256) public lastActivity;
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event FeeCollected(address indexed from, uint256 value);
+    event FeeCollected(address indexed from, uint256 amount);
+    event InactivityFeeCharged(address indexed from, uint256 feePercent);
+    event MintedFromInactive(uint256 amount);
+    event BurnedInactive(uint256 amount);
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
+    modifier noMinting() {
+        require(totalSupply() < MAX_SUPPLY, "Max supply reached");
         _;
     }
 
-    constructor(address _reservePool) {
-        owner = msg.sender;
+    constructor(address _reservePool) ERC20("Move Coin", "MOVC") {
+        require(_reservePool != address(0), "Invalid reserve pool");
         reservePool = _reservePool;
     }
 
-    function transfer(address to, uint256 value) external returns (bool) {
-        _updateInactivity(msg.sender);
-        uint256 fee = calculateFee(msg.sender, value);
-        uint256 sendAmount = value - fee;
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
+        uint256 feePercent = getDynamicFee(msg.sender);
+        uint256 feeAmount = (amount * feePercent) / 10000;
+        uint256 netAmount = amount - feeAmount;
 
-        require(balanceOf[msg.sender] >= value, "Insufficient balance");
-        balanceOf[msg.sender] -= value;
-        balanceOf[to] += sendAmount;
-        balanceOf[reservePool] += fee;
+        _transfer(_msgSender(), recipient, netAmount);
+        _transfer(_msgSender(), reservePool, feeAmount);
 
-        emit Transfer(msg.sender, to, sendAmount);
-        emit FeeCollected(msg.sender, fee);
+        emit FeeCollected(_msgSender(), feeAmount);
+        if (feePercent > BASE_FEE) {
+            emit InactivityFeeCharged(_msgSender(), feePercent);
+        }
+
+        lastActivity[msg.sender] = block.timestamp;
+        lastActivity[recipient] = block.timestamp;
+
         return true;
     }
 
-    function _updateInactivity(address user) internal {
-        lastActive[user] = block.timestamp;
+    function getDynamicFee(address user) public view returns (uint256) {
+        uint256 last = lastActivity[user];
+        if (last == 0) return BASE_FEE;
+
+        uint256 inactiveYears = (block.timestamp - last) / 365 days;
+        return BASE_FEE + inactiveYears * 100; // +1% per year of inactivity
     }
 
-    function calculateFee(address user, uint256 value) public view returns (uint256) {
-        uint256 inactivityYears = (block.timestamp - lastActive[user]) / 31536000;
-        uint256 multiplier = inactivityYears > 0 ? inactivityYears : 1;
-        return (value * feeBase * multiplier) / FEE_DIVISOR;
+    /// @notice Minting logic based on detected total inactivity
+    function mintInactive(uint256 amount) external noMinting {
+        require(amount + totalSupply() <= MAX_SUPPLY, "Exceeds supply");
+        _mint(reservePool, amount);
+        emit MintedFromInactive(amount);
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
-        require(distributedSupply + amount <= totalSupply, "Exceeds cap");
-        distributedSupply += amount;
-        balanceOf[to] += amount;
-        emit Transfer(address(0), to, amount);
-    }
-
-    function burn(uint256 amount) external {
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        balanceOf[msg.sender] -= amount;
-        distributedSupply -= amount;
-        emit Transfer(msg.sender, address(0), amount);
+    /// @notice Burn minted inactive coins if users return
+    function burnFromReserve(uint256 amount) external {
+        _burn(reservePool, amount);
+        emit BurnedInactive(amount);
     }
 }
