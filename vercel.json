@@ -12,7 +12,8 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "frontend/build/index.html"
+      "dest": "index.html"
     }
-  ]
+  ],
+  "outputDirectory": "frontend/build"
 }
