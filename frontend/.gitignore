@@ -1,2 +1,12 @@
-node_modules/
+# node modules and build output
+frontend/node_modules/
+frontend/build/
+*.log
+
+# dotenv files
 .env
+.env.local
+.env.*.local
+
+# misc
+.DS_Store
