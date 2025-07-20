@@ -25,7 +25,7 @@ git pull origin main --rebase || {
 echo "📦 Installing dependencies..."
 cd frontend
 npm install
-npm audit fix --force || true
+# npm audit fix --force || true
 
 # 🚀 Build production
 echo "🚀 Building production version..."
