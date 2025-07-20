@@ -23,8 +23,8 @@ git pull origin main --rebase || {
 
 echo "📦 Installing dependencies..."
 cd frontend
-npm install
-npm audit fix --force || true
+npm install --prefix frontend
+npm audit fix --prefix frontend --force || true
 echo "🚀 Building production version..."
 npm run --prefix frontend build | tee -a build-log.txt
 cd ..
