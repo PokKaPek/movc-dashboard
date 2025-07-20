@@ -29,7 +29,7 @@ npm audit fix --force || true
 
 # 🚀 Build production
 echo "🚀 Building production version..."
-npm run build | tee -a build-log.txt
+npm run build | tee -a ../build-log.txt
 
 cd ..
 
