@@ -30,6 +30,7 @@ npm audit fix --force || true
 # 🚀 Build production
 echo "🚀 Building production version..."
 npm run build | tee -a build-log.txt
+
 cd ..
 
 # 📦 Add ไฟล์ใหม่หรือที่เปลี่ยนแปลงทั้งหมด
