@@ -30,7 +30,10 @@ npm audit fix --prefix frontend --force || true
 
 # 🚀 Build
 echo "🚀 Building production version..."
-npm run build --prefix frontend | tee -a build-log.txt
+cd frontend
+npm install
+npm run build | tee ../build-log.txt
+cd ..
 
 # 📦 Add ไฟล์ใหม่หรือไฟล์ที่เปลี่ยนแปลงทั้งหมด
 echo "📦 Staging all modified + new files..."
