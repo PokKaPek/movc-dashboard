@@ -26,7 +26,7 @@ cd frontend
 npm install
 npm audit fix --force || true
 echo "🚀 Building production version..."
-npm run build | tee -a ../build-log.txt
+npm run --prefix frontend build | tee -a build-log.txt
 cd ..
 
 # 📦 Add ไฟล์ใหม่หรือไฟล์ที่เปลี่ยนแปลงทั้งหมด
