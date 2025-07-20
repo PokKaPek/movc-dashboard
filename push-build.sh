@@ -21,18 +21,12 @@ git pull origin main --rebase || {
   exit 1
 }
 
-# 📦 ติดตั้งและ audit
 echo "📦 Installing dependencies..."
-npm install --prefix frontend
-
-echo "🔍 Checking & fixing audit issues..."
-npm audit fix --prefix frontend --force || true
-
-# 🚀 Build
-echo "🚀 Building production version..."
 cd frontend
 npm install
-npm run build | tee ../build-log.txt
+npm audit fix --force || true
+echo "🚀 Building production version..."
+npm run build | tee -a ../build-log.txt
 cd ..
 
 # 📦 Add ไฟล์ใหม่หรือไฟล์ที่เปลี่ยนแปลงทั้งหมด
